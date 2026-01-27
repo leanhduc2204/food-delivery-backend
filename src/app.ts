@@ -10,6 +10,7 @@ const app: Application = express();
 import authRoutes from "./modules/auth/routes";
 import restaurantRoutes from "./modules/restaurants/routes";
 import orderRoutes from "./modules/orders/routes";
+import categoryRoutes from "./modules/categories/routes";
 
 // Middleware
 app.use(helmet());
@@ -20,6 +21,7 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/restaurants", restaurantRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/categories", categoryRoutes);
 
 // Health Check
 app.get("/health", (req: Request, res: Response) => {

@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import { restaurantService } from "./service";
-import { createRestaurantSchema, createMenuItemSchema } from "./schema";
+import {
+  createRestaurantSchema,
+  createMenuItemSchema,
+  getRestaurantsQuerySchema,
+} from "./schema";
 import { AuthRequest } from "../../common/middlewares/authMiddleware";
 
 export class RestaurantController {
@@ -23,9 +27,17 @@ export class RestaurantController {
 
   async getRestaurants(req: Request, res: Response) {
     try {
-      const restaurants = await restaurantService.getRestaurants();
-      res.status(200).json(restaurants);
+      // Parse and validate query parameters
+      const queryParams = getRestaurantsQuerySchema.parse(req.query);
+      const result = await restaurantService.getRestaurants(queryParams);
+      res.status(200).json(result);
     } catch (error: any) {
+      if (error.name === "ZodError") {
+        return res.status(400).json({
+          message: "Invalid query parameters",
+          errors: error.errors,
+        });
+      }
       res.status(500).json({ message: error.message });
     }
   }
