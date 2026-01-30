@@ -4,41 +4,52 @@ import { createOrderSchema, updateOrderStatusSchema } from "./schema";
 
 export class OrderService {
   async createOrder(userId: string, data: z.infer<typeof createOrderSchema>) {
-    // Calculate total price (simplified: assuming we fetch prices)
-    // For this MVP, we will fetch menu items to calculate total
-    let total = 0;
+    let totalPrice = 0;
+    const orderItems: { menuItemId: string; quantity: number; price: number }[] = [];
 
-    // Check if items exist and calculate total
-    // Note: In real app, optimize this to fewer queries
     for (const item of data.items) {
       const menuItem = await prisma.menuItem.findUnique({
         where: { id: item.menuItemId },
       });
       if (!menuItem) throw new Error(`Menu item ${item.menuItemId} not found`);
-      total += Number(menuItem.price) * item.quantity;
+      const price = Number(menuItem.price);
+      totalPrice += price * item.quantity;
+      orderItems.push({
+        menuItemId: item.menuItemId,
+        quantity: item.quantity,
+        price,
+      });
     }
+
+    const deliveryFee = data.deliveryFee ?? 0;
+    const paymentStatus = (data.paymentStatus ?? "PENDING") as "PENDING" | "PAID" | "FAILED" | "REFUNDED";
 
     return prisma.order.create({
       data: {
         userId,
         restaurantId: data.restaurantId,
-        total,
         status: "PENDING",
+        totalPrice: totalPrice + deliveryFee,
+        deliveryFee,
+        paymentStatus,
+        orderItems: {
+          create: orderItems,
+        },
       },
+      include: { orderItems: true },
     });
   }
 
   async getOrders(userId: string, role: string) {
-    if (role === "CUSTOMER") {
-      return prisma.order.findMany({ where: { userId } });
-    } else if (role === "RESTAURANT_OWNER") {
-      // Find restaurants owned by user
-      const restaurants = await prisma.restaurant.findMany({
-        where: { ownerId: userId },
-      });
-      const restaurantIds = restaurants.map((r) => r.id);
+    if (role === "USER") {
       return prisma.order.findMany({
-        where: { restaurantId: { in: restaurantIds } },
+        where: { userId },
+        include: { orderItems: true, restaurant: true },
+      });
+    }
+    if (role === "ADMIN") {
+      return prisma.order.findMany({
+        include: { orderItems: true, restaurant: true, user: true },
       });
     }
     return [];

@@ -15,10 +15,7 @@ export class RestaurantController {
         return res.status(401).json({ message: "Unauthorized" });
 
       const data = createRestaurantSchema.parse(req.body);
-      const restaurant = await restaurantService.createRestaurant(
-        authReq.user.userId,
-        data
-      );
+      const restaurant = await restaurantService.createRestaurant(data);
       res.status(201).json(restaurant);
     } catch (error: any) {
       res.status(400).json({ message: error.message });

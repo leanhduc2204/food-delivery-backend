@@ -2,17 +2,21 @@ import { z } from "zod";
 
 export const createRestaurantSchema = z.object({
   name: z.string().min(2),
+  description: z.string().optional(),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  isActive: z.boolean().optional().default(true),
 });
 
 export const createMenuItemSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
   price: z.number().positive(),
-  restaurantId: z.string().uuid(),
+  imageUrl: z.string().url().optional(),
+  isAvailable: z.boolean().optional().default(true),
+  categoryId: z.string().uuid(),
 });
 
-// Query parameters schema for getRestaurants endpoint
-// Note: Express query params come as strings, so we need to coerce them
 export const getRestaurantsQuerySchema = z.object({
   search: z.string().min(1).optional(),
   category: z.string().uuid().optional(),

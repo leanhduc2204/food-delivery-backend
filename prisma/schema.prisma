@@ -7,67 +7,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  CUSTOMER
-  RESTAURANT_OWNER
-  DRIVER
+enum UserRole {
+  USER
   ADMIN
-}
-
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String?
-  role      Role     @default(CUSTOMER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  restaurant Restaurant?
-  orders     Order[]
-}
-
-model Restaurant {
-  id        String   @id @default(uuid())
-  name      String
-  ownerId   String   @unique
-  owner     User     @relation(fields: [ownerId], references: [id])
-  menu      MenuItem[]
-  orders    Order[]
-  
-  image     String?
-  categories Category[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([name])
-  @@index([createdAt])
-  @@index([name, createdAt])
-}
-
-model MenuItem {
-  id           String     @id @default(uuid())
-  name         String
-  description  String?
-  price        Decimal
-  restaurantId String
-  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-
-  @@index([restaurantId])
-}
-
-model Order {
-  id           String      @id @default(uuid())
-  userId       String
-  user         User        @relation(fields: [userId], references: [id])
-  restaurantId String
-  restaurant   Restaurant  @relation(fields: [restaurantId], references: [id])
-  status       OrderStatus @default(PENDING)
-  total        Decimal
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
 }
 
 enum OrderStatus {
@@ -75,14 +17,129 @@ enum OrderStatus {
   CONFIRMED
   PREPARING
   ON_THE_WAY
-  DELIVERED
+  COMPLETED
   CANCELLED
 }
 
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentProvider {
+  STRIPE
+  MOMO
+  VNPAY
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  role         UserRole @default(USER)
+  refreshToken String?
+  addresses    UserAddress[]
+  orders       Order[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Restaurant {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  latitude    Float
+  longitude   Float
+  isActive    Boolean    @default(true)
+  categories  Category[]
+  orders      Order[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
 model Category {
-  id          String       @id @default(uuid())
-  name        String       @unique
-  restaurants Restaurant[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id           String     @id @default(uuid())
+  name         String
+  sortOrder    Int
+  isActive     Boolean    @default(true)
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  restaurantId String
+  menuItems    MenuItem[]
+  createdAt    DateTime   @default(now())
+}
+
+model MenuItem {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  imageUrl    String?
+  isAvailable Boolean  @default(true)
+  category    Category @relation(fields: [categoryId], references: [id])
+  categoryId  String
+  orderItems  OrderItem[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Order {
+  id            String        @id @default(uuid())
+  user          User          @relation(fields: [userId], references: [id])
+  userId        String
+  restaurant    Restaurant    @relation(fields: [restaurantId], references: [id])
+  restaurantId  String
+  status        OrderStatus
+  totalPrice   Float
+  deliveryFee  Float
+  paymentStatus PaymentStatus
+  orderItems   OrderItem[]
+  payments     Payment[]
+  statusHistory OrderStatusHistory[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model OrderItem {
+  id         String   @id @default(uuid())
+  order      Order    @relation(fields: [orderId], references: [id])
+  orderId    String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  menuItemId String
+  quantity   Int
+  price      Float
+}
+
+model Payment {
+  id            String          @id @default(uuid())
+  order         Order           @relation(fields: [orderId], references: [id])
+  orderId       String
+  provider      PaymentProvider
+  amount        Float
+  status        PaymentStatus
+  transactionId String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(uuid())
+  order     Order       @relation(fields: [orderId], references: [id])
+  orderId   String
+  status    OrderStatus
+  changedBy String
+  createdAt DateTime    @default(now())
+}
+
+model UserAddress {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  address   String
+  latitude  Float
+  longitude Float
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
 }

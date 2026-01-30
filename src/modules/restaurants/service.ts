@@ -8,15 +8,9 @@ import {
 import { Prisma } from "@prisma/client";
 
 export class RestaurantService {
-  async createRestaurant(
-    ownerId: string,
-    data: z.infer<typeof createRestaurantSchema>
-  ) {
+  async createRestaurant(data: z.infer<typeof createRestaurantSchema>) {
     return prisma.restaurant.create({
-      data: {
-        ...data,
-        ownerId,
-      },
+      data,
     });
   }
 
@@ -62,7 +56,9 @@ export class RestaurantService {
     const [restaurants, total] = await Promise.all([
       prisma.restaurant.findMany({
         where,
-        include: { menu: true, categories: true },
+        include: {
+          categories: { include: { menuItems: true } },
+        },
         skip,
         take: limit,
         orderBy,
@@ -89,12 +85,13 @@ export class RestaurantService {
   async getRestaurantById(id: string) {
     return prisma.restaurant.findUnique({
       where: { id },
-      include: { menu: true, categories: true },
+      include: {
+        categories: { include: { menuItems: true } },
+      },
     });
   }
 
   async addMenuItem(data: z.infer<typeof createMenuItemSchema>) {
-    // Verify restaurant ownership is handled in controller/middleware or here
     return prisma.menuItem.create({
       data,
     });

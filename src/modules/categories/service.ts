@@ -1,30 +1,20 @@
 import prisma from "../../config/prisma";
 import { z } from "zod";
-import { createCategorySchema, addRestaurantToCategorySchema } from "./schema";
+import { createCategorySchema } from "./schema";
 
 export class CategoryService {
   async createCategory(data: z.infer<typeof createCategorySchema>) {
     return prisma.category.create({
       data,
+      include: { restaurant: true, menuItems: true },
     });
   }
 
-  async getCategories() {
+  async getCategories(restaurantId?: string) {
     return prisma.category.findMany({
-      include: { restaurants: true },
-    });
-  }
-
-  async addRestaurantToCategory(
-    data: z.infer<typeof addRestaurantToCategorySchema>,
-  ) {
-    return prisma.category.update({
-      where: { id: data.categoryId },
-      data: {
-        restaurants: {
-          connect: { id: data.restaurantId },
-        },
-      },
+      where: restaurantId ? { restaurantId } : undefined,
+      include: { restaurant: true, menuItems: true },
+      orderBy: { sortOrder: "asc" },
     });
   }
 }

@@ -8,127 +8,69 @@ const SALT_ROUNDS = 10;
 async function main() {
   console.log("Start seeding ...");
 
-  const restaurants = [
-    {
-      name: "Burger King",
-      cuisine: "Fast Food",
-      image:
-        "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=800&q=80",
+  // Create admin user
+  const adminPasswordHash = await bcrypt.hash("admin123", SALT_ROUNDS);
+  const admin = await prisma.user.upsert({
+    where: { email: "admin@example.com" },
+    update: {},
+    create: {
+      email: "admin@example.com",
+      passwordHash: adminPasswordHash,
+      name: "Admin",
+      role: "ADMIN",
     },
-    {
-      name: "Sushi Palace",
-      cuisine: "Japanese",
-      image:
-        "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=800&q=80",
+  });
+  console.log(`Created admin: ${admin.email}`);
+
+  // Create a regular user
+  const userPasswordHash = await bcrypt.hash("password123", SALT_ROUNDS);
+  const user = await prisma.user.upsert({
+    where: { email: "user@example.com" },
+    update: {},
+    create: {
+      email: "user@example.com",
+      passwordHash: userPasswordHash,
+      name: "Test User",
+      role: "USER",
     },
-    {
-      name: "Pasta House",
-      cuisine: "Italian",
-      image:
-        "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800&q=80",
-    },
-    {
-      name: "Taco Fiesta",
-      cuisine: "Mexican",
-      image:
-        "https://images.unsplash.com/photo-1599974579688-8dbdd335c77f?w=800&q=80",
-    },
-    {
-      name: "Curry Corner",
-      cuisine: "Indian",
-      image:
-        "https://images.unsplash.com/photo-1585937421612-70a008356f36?w=800&q=80",
-    },
+  });
+  console.log(`Created user: ${user.email}`);
+
+  // Create restaurants (no owner in new schema)
+  const restaurantsData = [
+    { name: "Burger King", description: "Fast Food", latitude: 10.762622, longitude: 106.660172 },
+    { name: "Sushi Palace", description: "Japanese", latitude: 10.763622, longitude: 106.661172 },
+    { name: "Pasta House", description: "Italian", latitude: 10.764622, longitude: 106.662172 },
+    { name: "Taco Fiesta", description: "Mexican", latitude: 10.765622, longitude: 106.663172 },
+    { name: "Curry Corner", description: "Indian", latitude: 10.766622, longitude: 106.664172 },
   ];
 
-  console.log("Seeding categories...");
-  const categoryNames = [
-    "Fast Food",
-    "Japanese",
-    "Italian",
-    "Mexican",
-    "Indian",
-  ];
-  const categories = [];
-
-  for (const name of categoryNames) {
-    const category = await prisma.category.upsert({
-      where: { name },
-      update: {},
-      create: { name },
-    });
-    categories.push(category);
-    console.log(`Created category: ${category.name}`);
-  }
-
-  for (let i = 0; i < restaurants.length; i++) {
-    const email = `owner${i + 1}@example.com`;
-    const password = await bcrypt.hash("password123", SALT_ROUNDS);
-
-    // Create Owner
-    const user = await prisma.user.upsert({
-      where: { email },
-      update: {},
-      create: {
-        email,
-        password,
-        name: `Owner of ${restaurants[i].name}`,
-        role: "RESTAURANT_OWNER",
+  for (const r of restaurantsData) {
+    const restaurant = await prisma.restaurant.create({
+      data: {
+        name: r.name,
+        description: r.description,
+        latitude: r.latitude,
+        longitude: r.longitude,
+        isActive: true,
+        categories: {
+          create: [
+            {
+              name: `${r.name} - Main`,
+              sortOrder: 0,
+              isActive: true,
+              menuItems: {
+                create: [
+                  { name: "Special", description: "Chef recommended", price: 15.99, isAvailable: true },
+                  { name: "Drink", description: "Soft drink", price: 2.99, isAvailable: true },
+                ],
+              },
+            },
+          ],
+        },
       },
     });
-
-    console.log(`Created user: ${user.email}`);
-
-    // Create Restaurant
-    // Check if restaurant exists for this owner
-    const existingRestaurant = await prisma.restaurant.findUnique({
-      where: { ownerId: user.id },
-    });
-
-    let restaurant;
-    // Find matching category
-    const categoryName = restaurants[i].cuisine;
-    const category = categories.find((c) => c.name === categoryName);
-
-    if (!existingRestaurant) {
-      restaurant = await prisma.restaurant.create({
-        data: {
-          name: restaurants[i].name,
-          // cuisine: restaurants[i].cuisine, // Note: Schema doesn't have cuisine yet, handled loosely
-          image: restaurants[i].image,
-          ownerId: user.id,
-          categories: category
-            ? {
-                connect: { id: category.id },
-              }
-            : undefined,
-          menu: {
-            create: [
-              {
-                name: `${restaurants[i].name} Special`,
-                price: 15.99,
-                description: "Chef recommended",
-              },
-              { name: "Drink", price: 2.99, description: "Soft drink" },
-            ],
-          },
-        },
-      });
-      console.log(`Created restaurant: ${restaurant.name}`);
-    } else {
-      console.log(`Updating restaurant image/category for ${user.email}`);
-      restaurant = await prisma.restaurant.update({
-        where: { id: existingRestaurant.id },
-        data: {
-          image: restaurants[i].image,
-          categories: category
-            ? {
-                connect: { id: category.id },
-              }
-            : undefined,
-        },
-      });
-    }
+    console.log(`Created restaurant: ${restaurant.name}`);
   }
 
   console.log("Seeding finished.");

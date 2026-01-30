@@ -2,6 +2,8 @@ import { z } from "zod";
 
 export const createOrderSchema = z.object({
   restaurantId: z.string().uuid(),
+  deliveryFee: z.number().min(0).optional().default(0),
+  paymentStatus: z.enum(["PENDING", "PAID", "FAILED", "REFUNDED"]).optional().default("PENDING"),
   items: z
     .array(
       z.object({
@@ -18,7 +20,7 @@ export const updateOrderStatusSchema = z.object({
     "CONFIRMED",
     "PREPARING",
     "ON_THE_WAY",
-    "DELIVERED",
+    "COMPLETED",
     "CANCELLED",
   ]),
 });

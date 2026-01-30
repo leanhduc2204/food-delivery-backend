@@ -20,14 +20,16 @@ export class AuthService {
 
     const user = await prisma.user.create({
       data: {
-        ...data,
-        password: hashedPassword,
+        email: data.email,
+        name: data.name,
+        role: data.role as "USER" | "ADMIN",
+        passwordHash: hashedPassword,
       },
     });
 
     const token = this.generateToken(user.id, user.role);
-
-    return { user, token };
+    const { passwordHash: _, ...userWithoutPassword } = user;
+    return { user: userWithoutPassword, token };
   }
 
   async login(data: z.infer<typeof loginSchema>) {
@@ -39,15 +41,18 @@ export class AuthService {
       throw new Error("Invalid credentials");
     }
 
-    const isPasswordValid = await bcrypt.compare(data.password, user.password);
+    const isPasswordValid = await bcrypt.compare(
+      data.password,
+      user.passwordHash
+    );
 
     if (!isPasswordValid) {
       throw new Error("Invalid credentials");
     }
 
     const token = this.generateToken(user.id, user.role);
-
-    return { user, token };
+    const { passwordHash: _, ...userWithoutPassword } = user;
+    return { user: userWithoutPassword, token };
   }
 
   private generateToken(userId: string, role: string) {

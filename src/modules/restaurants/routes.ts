@@ -11,17 +11,17 @@ const router = Router();
 router.get("/", restaurantController.getRestaurants);
 router.get("/:id", restaurantController.getRestaurantById);
 
-// Protected (Restaurant Owner only)
+// Protected (Admin only)
 router.post(
   "/",
   authenticate,
-  authorize(["RESTAURANT_OWNER"]),
+  authorize(["ADMIN"]),
   restaurantController.createRestaurant
 );
 router.post(
   "/menu",
   authenticate,
-  authorize(["RESTAURANT_OWNER"]),
+  authorize(["ADMIN"]),
   restaurantController.addMenuItem
 );
 
