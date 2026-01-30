@@ -18,6 +18,7 @@ export class RestaurantService {
     const {
       search,
       category,
+      isActive = true,
       page = 1,
       limit = 20,
       sortBy = "createdAt",
@@ -25,7 +26,7 @@ export class RestaurantService {
     } = query;
 
     // Build where clause
-    const where: Prisma.RestaurantWhereInput = {};
+    const where: Prisma.RestaurantWhereInput = { isActive };
 
     // Search filter (case-insensitive partial match on name)
     if (search) {
@@ -35,11 +36,12 @@ export class RestaurantService {
       };
     }
 
-    // Category filter
+    // Category filter (only active categories when filtering by category)
     if (category) {
       where.categories = {
         some: {
           id: category,
+          isActive: true,
         },
       };
     }
@@ -57,7 +59,10 @@ export class RestaurantService {
       prisma.restaurant.findMany({
         where,
         include: {
-          categories: { include: { menuItems: true } },
+          categories: {
+            where: { isActive: true },
+            include: { menuItems: { where: { isAvailable: true } } },
+          },
         },
         skip,
         take: limit,
@@ -82,11 +87,19 @@ export class RestaurantService {
     };
   }
 
-  async getRestaurantById(id: string) {
-    return prisma.restaurant.findUnique({
-      where: { id },
+  async getRestaurantById(id: string, onlyActive = true) {
+    return prisma.restaurant.findFirst({
+      where: {
+        id,
+        ...(onlyActive ? { isActive: true } : {}),
+      },
       include: {
-        categories: { include: { menuItems: true } },
+        categories: {
+          where: onlyActive ? { isActive: true } : undefined,
+          include: {
+            menuItems: onlyActive ? { where: { isAvailable: true } } : true,
+          },
+        },
       },
     });
   }

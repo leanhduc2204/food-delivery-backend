@@ -13,7 +13,7 @@ router.post("/", orderController.createOrder); // Customer creates order
 router.get("/", orderController.getOrders); // Customer/Restaurant views orders
 router.patch(
   "/:id/status",
-  authorize(["RESTAURANT_OWNER", "DRIVER"]),
+  authorize(["ADMIN"]),
   orderController.updateStatus
 );
 

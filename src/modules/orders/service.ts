@@ -23,20 +23,35 @@ export class OrderService {
 
     const deliveryFee = data.deliveryFee ?? 0;
     const paymentStatus = (data.paymentStatus ?? "PENDING") as "PENDING" | "PAID" | "FAILED" | "REFUNDED";
+    const paymentProvider = (data.paymentProvider ?? "STRIPE") as "STRIPE" | "MOMO" | "VNPAY";
+    const totalOrderPrice = totalPrice + deliveryFee;
 
     return prisma.order.create({
       data: {
         userId,
         restaurantId: data.restaurantId,
         status: "PENDING",
-        totalPrice: totalPrice + deliveryFee,
+        totalPrice: totalOrderPrice,
         deliveryFee,
         paymentStatus,
         orderItems: {
           create: orderItems,
         },
+        statusHistory: {
+          create: {
+            status: "PENDING",
+            changedBy: userId,
+          },
+        },
+        payments: {
+          create: {
+            provider: paymentProvider,
+            amount: totalOrderPrice,
+            status: paymentStatus,
+          },
+        },
       },
-      include: { orderItems: true },
+      include: { orderItems: true, statusHistory: true, payments: true },
     });
   }
 
@@ -44,12 +59,18 @@ export class OrderService {
     if (role === "USER") {
       return prisma.order.findMany({
         where: { userId },
-        include: { orderItems: true, restaurant: true },
+        include: { orderItems: true, restaurant: true, statusHistory: true, payments: true },
       });
     }
     if (role === "ADMIN") {
       return prisma.order.findMany({
-        include: { orderItems: true, restaurant: true, user: true },
+        include: {
+          orderItems: true,
+          restaurant: true,
+          user: true,
+          statusHistory: true,
+          payments: true,
+        },
       });
     }
     return [];
@@ -57,11 +78,21 @@ export class OrderService {
 
   async updateStatus(
     orderId: string,
-    status: z.infer<typeof updateOrderStatusSchema>["status"]
+    status: z.infer<typeof updateOrderStatusSchema>["status"],
+    changedBy: string
   ) {
     return prisma.order.update({
       where: { id: orderId },
-      data: { status },
+      data: {
+        status,
+        statusHistory: {
+          create: {
+            status,
+            changedBy,
+          },
+        },
+      },
+      include: { orderItems: true, statusHistory: true },
     });
   }
 }

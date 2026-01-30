@@ -36,9 +36,16 @@ export class OrderController {
 
   async updateStatus(req: Request, res: Response) {
     try {
+      const authReq = req as AuthRequest;
+      if (!authReq.user)
+        return res.status(401).json({ message: "Unauthorized" });
       const { id } = req.params;
       const data = updateOrderStatusSchema.parse(req.body);
-      const order = await orderService.updateStatus(id, data.status);
+      const order = await orderService.updateStatus(
+        id,
+        data.status,
+        authReq.user.userId
+      );
       res.status(200).json(order);
     } catch (error: any) {
       res.status(400).json({ message: error.message });

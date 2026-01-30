@@ -10,10 +10,16 @@ export class CategoryService {
     });
   }
 
-  async getCategories(restaurantId?: string) {
+  async getCategories(restaurantId?: string, onlyActive = true) {
     return prisma.category.findMany({
-      where: restaurantId ? { restaurantId } : undefined,
-      include: { restaurant: true, menuItems: true },
+      where: {
+        ...(restaurantId ? { restaurantId } : {}),
+        ...(onlyActive ? { isActive: true } : {}),
+      },
+      include: {
+        restaurant: true,
+        menuItems: onlyActive ? { where: { isAvailable: true } } : true,
+      },
       orderBy: { sortOrder: "asc" },
     });
   }

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { categoryService } from "./service";
-import { createCategorySchema } from "./schema";
+import { createCategorySchema, getCategoriesQuerySchema } from "./schema";
 
 export class CategoryController {
   async createCategory(req: Request, res: Response) {
@@ -15,10 +15,19 @@ export class CategoryController {
 
   async getCategories(req: Request, res: Response) {
     try {
-      const restaurantId = req.query.restaurantId as string | undefined;
-      const categories = await categoryService.getCategories(restaurantId);
+      const query = getCategoriesQuerySchema.parse(req.query);
+      const categories = await categoryService.getCategories(
+        query.restaurantId,
+        query.isActive
+      );
       res.status(200).json(categories);
     } catch (error: any) {
+      if (error.name === "ZodError") {
+        return res.status(400).json({
+          message: "Invalid query parameters",
+          errors: error.errors,
+        });
+      }
       res.status(500).json({ message: error.message });
     }
   }

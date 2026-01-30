@@ -20,6 +20,7 @@ export const createMenuItemSchema = z.object({
 export const getRestaurantsQuerySchema = z.object({
   search: z.string().min(1).optional(),
   category: z.string().uuid().optional(),
+  isActive: z.coerce.boolean().optional().default(true),
   page: z.coerce.number().int().min(1).optional().default(1),
   limit: z.coerce.number().int().min(1).max(50).optional().default(20),
   sortBy: z.enum(["name", "createdAt"]).optional().default("createdAt"),
