@@ -51,8 +51,11 @@ model Restaurant {
   id          String     @id @default(uuid())
   name        String
   description String?
+  image       String?
   latitude    Float
   longitude   Float
+  rating      Float      @default(0)
+  viewCount   Int        @default(0)
   isActive    Boolean    @default(true)
   categories  Category[]
   orders      Order[]
@@ -63,6 +66,7 @@ model Restaurant {
 model Category {
   id           String     @id @default(uuid())
   name         String
+  emoji        String     @default("📦")
   sortOrder    Int
   isActive     Boolean    @default(true)
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id])

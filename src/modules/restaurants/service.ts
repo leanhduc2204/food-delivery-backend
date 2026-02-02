@@ -87,8 +87,8 @@ export class RestaurantService {
     };
   }
 
-  async getRestaurantById(id: string, onlyActive = true) {
-    return prisma.restaurant.findFirst({
+  async getRestaurantById(id: string, onlyActive = true, incrementViewCount = true) {
+    const restaurant = await prisma.restaurant.findFirst({
       where: {
         id,
         ...(onlyActive ? { isActive: true } : {}),
@@ -102,6 +102,14 @@ export class RestaurantService {
         },
       },
     });
+    if (restaurant && incrementViewCount) {
+      await prisma.restaurant.update({
+        where: { id: restaurant.id },
+        data: { viewCount: { increment: 1 } },
+      });
+      return { ...restaurant, viewCount: restaurant.viewCount + 1 };
+    }
+    return restaurant;
   }
 
   async addMenuItem(data: z.infer<typeof createMenuItemSchema>) {

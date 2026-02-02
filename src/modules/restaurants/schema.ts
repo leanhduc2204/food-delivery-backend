@@ -3,8 +3,11 @@ import { z } from "zod";
 export const createRestaurantSchema = z.object({
   name: z.string().min(2),
   description: z.string().optional(),
+  image: z.string().url().optional().nullable(),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
+  rating: z.number().min(0).max(5).optional().default(0),
+  viewCount: z.number().int().min(0).optional().default(0),
   isActive: z.boolean().optional().default(true),
 });
 
