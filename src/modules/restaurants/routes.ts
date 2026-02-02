@@ -18,6 +18,12 @@ router.post(
   authorize(["ADMIN"]),
   restaurantController.createRestaurant
 );
+router.patch(
+  "/:id",
+  authenticate,
+  authorize(["ADMIN"]),
+  restaurantController.updateRestaurant
+);
 router.post(
   "/menu",
   authenticate,

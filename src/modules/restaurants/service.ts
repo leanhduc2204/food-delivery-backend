@@ -4,13 +4,35 @@ import prisma from "../../config/prisma";
 import {
   createMenuItemSchema,
   createRestaurantSchema,
+  updateRestaurantSchema,
   getRestaurantsQuerySchema,
 } from "./schema";
 
+const includeGlobalCategories = {
+  globalCategoryLinks: {
+    include: { globalCategory: true },
+  },
+};
+
 export class RestaurantService {
   async createRestaurant(data: z.infer<typeof createRestaurantSchema>) {
+    const { globalCategoryIds = [], ...rest } = data;
     return prisma.restaurant.create({
-      data,
+      data: {
+        ...rest,
+        globalCategoryLinks:
+          globalCategoryIds.length > 0
+            ? {
+                create: globalCategoryIds.map((globalCategoryId) => ({
+                  globalCategoryId,
+                })),
+              }
+            : undefined,
+      },
+      include: {
+        categories: true,
+        ...includeGlobalCategories,
+      },
     });
   }
 
@@ -18,6 +40,7 @@ export class RestaurantService {
     const {
       search,
       category,
+      globalCategory,
       isActive = true,
       page = 1,
       limit = 20,
@@ -46,6 +69,15 @@ export class RestaurantService {
       };
     }
 
+    // Global category filter
+    if (globalCategory) {
+      where.globalCategoryLinks = {
+        some: {
+          globalCategoryId: globalCategory,
+        },
+      };
+    }
+
     // Calculate pagination
     const skip = (page - 1) * limit;
 
@@ -63,6 +95,7 @@ export class RestaurantService {
             where: { isActive: true },
             include: { menuItems: { where: { isAvailable: true } } },
           },
+          ...includeGlobalCategories,
         },
         skip,
         take: limit,
@@ -104,6 +137,7 @@ export class RestaurantService {
             menuItems: onlyActive ? { where: { isAvailable: true } } : true,
           },
         },
+        ...includeGlobalCategories,
       },
     });
     if (restaurant && incrementViewCount) {
@@ -119,6 +153,45 @@ export class RestaurantService {
   async addMenuItem(data: z.infer<typeof createMenuItemSchema>) {
     return prisma.menuItem.create({
       data,
+    });
+  }
+
+  async updateRestaurant(
+    id: string,
+    data: z.infer<typeof updateRestaurantSchema>
+  ) {
+    const existing = await prisma.restaurant.findUnique({
+      where: { id },
+    });
+    if (!existing) return null;
+
+    const {
+      globalCategoryIds,
+      ...rest
+    } = data;
+
+    const updateData: Prisma.RestaurantUpdateInput = { ...rest };
+
+    if (globalCategoryIds !== undefined) {
+      await prisma.restaurantGlobalCategory.deleteMany({
+        where: { restaurantId: id },
+      });
+      if (globalCategoryIds.length > 0) {
+        updateData.globalCategoryLinks = {
+          create: globalCategoryIds.map((globalCategoryId) => ({
+            globalCategoryId,
+          })),
+        };
+      }
+    }
+
+    return prisma.restaurant.update({
+      where: { id },
+      data: updateData,
+      include: {
+        categories: true,
+        ...includeGlobalCategories,
+      },
     });
   }
 }

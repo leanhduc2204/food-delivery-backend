@@ -9,6 +9,19 @@ export const createRestaurantSchema = z.object({
   rating: z.number().min(0).max(5).optional().default(0),
   viewCount: z.number().int().min(0).optional().default(0),
   isActive: z.boolean().optional().default(true),
+  globalCategoryIds: z.array(z.string().uuid()).optional().default([]),
+});
+
+export const updateRestaurantSchema = z.object({
+  name: z.string().min(2).optional(),
+  description: z.string().optional().nullable(),
+  image: z.string().url().optional().nullable(),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+  rating: z.number().min(0).max(5).optional(),
+  viewCount: z.number().int().min(0).optional(),
+  isActive: z.boolean().optional(),
+  globalCategoryIds: z.array(z.string().uuid()).optional(),
 });
 
 export const createMenuItemSchema = z.object({
@@ -23,6 +36,7 @@ export const createMenuItemSchema = z.object({
 export const getRestaurantsQuerySchema = z.object({
   search: z.string().min(1).optional(),
   category: z.string().uuid().optional(),
+  globalCategory: z.string().uuid().optional(),
   isActive: z.coerce.boolean().optional().default(true),
   page: z.coerce.number().int().min(1).optional().default(1),
   limit: z.coerce.number().int().min(1).max(50).optional().default(20),
