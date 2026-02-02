@@ -47,6 +47,26 @@ model User {
   updatedAt    DateTime @updatedAt
 }
 
+model GlobalCategory {
+  id           String    @id @default(uuid())
+  name         String    @unique
+  slug         String    @unique
+  emoji        String    @default("📦")
+  sortOrder    Int       @default(0)
+  isActive     Boolean   @default(true)
+  links        RestaurantGlobalCategory[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model RestaurantGlobalCategory {
+  restaurantId      String
+  globalCategoryId String
+  restaurant        Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  globalCategory    GlobalCategory @relation(fields: [globalCategoryId], references: [id], onDelete: Cascade)
+  @@id([restaurantId, globalCategoryId])
+}
+
 model Restaurant {
   id          String     @id @default(uuid())
   name        String
@@ -61,12 +81,12 @@ model Restaurant {
   orders      Order[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+  globalCategoryLinks RestaurantGlobalCategory[]
 }
 
 model Category {
   id           String     @id @default(uuid())
   name         String
-  emoji        String     @default("📦")
   sortOrder    Int
   isActive     Boolean    @default(true)
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id])

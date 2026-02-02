@@ -12,6 +12,7 @@ import authRoutes from "./modules/auth/routes";
 import restaurantRoutes from "./modules/restaurants/routes";
 import orderRoutes from "./modules/orders/routes";
 import categoryRoutes from "./modules/categories/routes";
+import globalCategoryRoutes from "./modules/global-categories/routes";
 import addressRoutes from "./modules/addresses/routes";
 import paymentRoutes from "./modules/payments/routes";
 
@@ -25,6 +26,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/restaurants", restaurantRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/categories", categoryRoutes);
+app.use("/api/global-categories", globalCategoryRoutes);
 app.use("/api/addresses", addressRoutes);
 app.use("/api/payments", paymentRoutes);
 

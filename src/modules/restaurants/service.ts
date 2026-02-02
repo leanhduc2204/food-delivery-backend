@@ -1,11 +1,11 @@
-import prisma from "../../config/prisma";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
+import prisma from "../../config/prisma";
 import {
-  createRestaurantSchema,
   createMenuItemSchema,
+  createRestaurantSchema,
   getRestaurantsQuerySchema,
 } from "./schema";
-import { Prisma } from "@prisma/client";
 
 export class RestaurantService {
   async createRestaurant(data: z.infer<typeof createRestaurantSchema>) {
@@ -87,7 +87,11 @@ export class RestaurantService {
     };
   }
 
-  async getRestaurantById(id: string, onlyActive = true, incrementViewCount = true) {
+  async getRestaurantById(
+    id: string,
+    onlyActive = true,
+    incrementViewCount = true
+  ) {
     const restaurant = await prisma.restaurant.findFirst({
       where: {
         id,
